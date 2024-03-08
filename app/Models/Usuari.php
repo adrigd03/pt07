@@ -7,7 +7,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Model;
-
+use Illuminate\Support\Facades\Hash;
 
 class Usuari extends Model implements Authenticatable
 {
@@ -44,8 +44,6 @@ class Usuari extends Model implements Authenticatable
         return $newNickname;
     }
 
-
-
     public function setUsernameAttribute($value)
     {
         $this->attributes['username'] = strtolower($value);
@@ -53,8 +51,9 @@ class Usuari extends Model implements Authenticatable
 
     public function setPasswordAttribute($value)
     {
-        $this->attributes['password'] = bcrypt($value);
+        $this->attributes['password'] = Hash::make($value);
     }
+
 
     public function getAuthPassword()
     {

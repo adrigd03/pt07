@@ -1,5 +1,4 @@
 # To-do
-- Acabar de fer login normal i el registre
 - Crear base de datos de articles de manera que sea coherente con los usuarios
 - 
 
