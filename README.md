@@ -1,6 +1,6 @@
 # To-do
-- Crear base de datos de articles de manera que sea coherente con los usuarios
 - 
+- Mirar si de tener la opción de mostrar  los artículos propios en una pestaña aparte en la general
 
 ## Cosas que afegir en el readme final
 
