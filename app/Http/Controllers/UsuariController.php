@@ -58,6 +58,7 @@ class UsuariController extends Controller
     public function logout()
     {
         Auth::logout();
+        session()->flush();
         return redirect()->route('home');
     }
 
@@ -165,19 +166,30 @@ class UsuariController extends Controller
             $request->validate(
                 [
                     'emailUsername' => 'required',
-                    'password' => 'required'
+                    'password' => 'required',
+                    'g-token' => session('loginIntents') >= 3 ? 'required' : ''
                 ],
                 [
                     'emailUsername.required' => 'El email o el nom de usuari és obligatori',
-                    'password.required' => 'La contrasenya és obligatòria'
+                    'password.required' => 'La contrasenya és obligatòria',
+                    'g-token.required' => 'El captcha és obligatori',
                 ]
             );
 
             // Comprovem si la contrasenya és correcta utilitzant el hash check
             $usuari = Usuari::where('email', $request->emailUsername)->orWhere('username', $request->emailUsername)->first();
 
-            if (!$usuari || Hash::check($request->password, $usuari->password) == false) {
-                return redirect()->back()->withErrors(['error' => 'Les dades no són correctes'], 'login')->withInput();
+            if (!$usuari) {
+                return redirect()->back()->withErrors(['error' => 'El correu o nom de usuari no són correctes'], 'login')->withInput();
+            }
+
+            if (Hash::check($request->password, $usuari->password) == false) {
+                // Si la contrasenya esta malament, sumem un intent de login
+                if (!session('loginIntents')) session(['loginIntents' => 1]); 
+
+                session(['loginIntents' => session('loginIntents') + 1]);
+
+                return redirect()->back()->withErrors(['error' => 'La contrasenya no és correcta'], 'login')->withInput();
             }
 
             // Autenticar l'usuari
@@ -185,10 +197,8 @@ class UsuariController extends Controller
 
             // Redirigir l'usuari a la pàgina home
             return redirect()->route('home');
-
-
         } catch (ValidationException $e) {
-            // Retornem la resposta error si hi ha hagut algun error de validació
+            // Retornem la resposta error si hi ha hagut algun error de validació. 
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'login')->withInput();
         } catch (\Exception $e) {
             //Retornem la resposta error si ha ocorregut algun error
