@@ -1,6 +1,7 @@
 # To-do
-- Mirar si de tener la opción de mostrar  los artículos propios en una pestaña aparte en la general
+- Recuperació de contrasenya
 - Galeria
+- configuració de contrasenya / imatge avatar
 ## Cosas que afegir en el readme final
 
 ## Comentaris

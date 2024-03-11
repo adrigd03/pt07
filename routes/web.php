@@ -22,7 +22,7 @@ use function PHPSTORM_META\map;
 */
 
 // En la rurta home passar tots els articles a la vista home
-Route::get('/', [ArticleController::class, 'home'])->name('home');
+Route::get('/', [ArticleController::class, 'home'])->name('home')->middleware('RedireccionarPaginaInvalida');
 
 
 Route::get('login-google', [UsuariController::class, 'loginGoogle'])->name('login-google');
@@ -48,5 +48,7 @@ Route::post('articles',[ArticleController::class, 'create'])->name('articles.cre
 Route::put('articles/{article}', [ArticleController::class, 'editar'])->name('articles.editar')->middleware('auth');
 
 Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy')->middleware('auth');
+
+Route::get('articles-propis', [ArticleController::class, 'articlesPropis'])->name('articles-propis')->middleware('auth');
 
 

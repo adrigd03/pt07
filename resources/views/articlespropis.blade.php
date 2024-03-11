@@ -23,20 +23,17 @@
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="">Home</a>
+                        <a class="nav-link active" aria-current="page" href="{{route('home')}}">Home</a>
                     </li>
-                    @auth
+
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{{route('articles-propis')}}">Articles propis</a>
                     </li>
 
-                    @endauth
-
-
                 </ul>
 
             </div>
-            @auth
+
             <ul class="navbar-nav flex-nowrap ms-auto">
                 <li class="nav-item dropdown no-arrow">
                     <div class="nav-item dropdown no-arrow">
@@ -60,29 +57,18 @@
                     </div>
                 </li>
             </ul>
-            @endauth
-            @guest
-            <!-- Mostrar dos botons per el login i registre -->
-            <ul class="navbar-nav flex-nowrap ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('login') }}">Login</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ route('registre') }}">Registre</a>
-                </li>
-            </ul>
-            @endguest
+
         </div>
 
     </nav>
 
 
     <div class="container">
-        @auth
+
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCreateArticle">
             Crear article
         </button>
-        @endauth
+
         @if (session('success'))
         <div class="alert alert-success mt-1">
             {{ session('success') }}
@@ -121,8 +107,6 @@
                                         <td>{{ $article->contingut }}</td>
                                         <td>{{ $article->usuari }}</td>
                                         <td>
-                                            @auth
-                                            @if (Auth::user()->email == $article->usuari)
                                             <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalEditArticle{{ $article->id }}">
                                                 Editar
                                             </button>
@@ -131,8 +115,6 @@
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger">Eliminar</button>
                                             </form>
-                                            @endif
-                                            @endauth
                                         </td>
                                     </tr>
                                     @endforeach
@@ -151,7 +133,7 @@
     </div>
 
     <!-- modal form per crear article-->
-    <div class="modal fade " id="modalCreateArticle" tabindex="-1" aria-labelledby="modalCreateArticleLabel" aria-hidden="true" >
+    <div class="modal fade " id="modalCreateArticle" tabindex="-1" aria-labelledby="modalCreateArticleLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -199,7 +181,7 @@
     </script>
 
     @endif
- 
+
 
 
 
@@ -237,7 +219,7 @@
 
     <!-- modal form per editar els articles del usuari si ha fet un error -->
     @if($errors->editarArticle->any())
-    <div class="modal fade show" id="modalEditArticle" tabindex="-1" aria-labelledby="modalEditArticleLabel" aria-hidden="true" >
+    <div class="modal fade show" id="modalEditArticle" tabindex="-1" aria-labelledby="modalEditArticleLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -269,19 +251,17 @@
         </div>
     </div>
 
-    <script >
+    <script>
         var myModal = new bootstrap.Modal(document.getElementById('modalEditArticle'), {
             keyboard: false
         })
         myModal.show()
-
     </script>
     @endif
 
 
 
 
-    
 
 
 

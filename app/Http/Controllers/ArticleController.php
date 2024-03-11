@@ -30,7 +30,14 @@ class ArticleController extends Controller
                 ],
                 [
                     'titol.required' => 'El camp titol és obligatori.',
+                    'titol.min' => 'El camp titol ha de tenir com a mínim 3 caràcters.',
+                    'titol.max' => 'El camp titol ha de tenir com a màxim 50 caràcters.',
+                    'titol.string' => 'El camp titol ha de ser un text.',
                     'contingut.required' => 'El camp contingut és obligatori.',
+                    'contingut.min' => 'El camp contingut ha de tenir com a mínim 10 caràcters.',
+                    'contingut.max' => 'El camp contingut ha de tenir com a màxim 255 caràcters.',
+                    'contingut.string' => 'El camp contingut ha de ser un text.',
+
 
                 ]
             );
@@ -45,8 +52,7 @@ class ArticleController extends Controller
             return redirect()->back()
                 ->with('success', 'Article creat correctament.');
         } catch (ValidationException $e) {
-            return redirect()->back()
-                ->withErrors($e->validator->getMessageBag(), 'crearArticle')->withInput();
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'crearArticle')->withInput();
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Error al crear l\'article.');
@@ -112,5 +118,11 @@ class ArticleController extends Controller
 
         return redirect()->back()
             ->with('success', 'Article eliminat correctament.');
+    }
+
+    public function articlesPropis()
+    {
+        $articles = Article::where('usuari', Auth::user()->email)->latest()->paginate(5);
+        return view('articlesPropis', compact('articles'));
     }
 }
