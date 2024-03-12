@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\CanResetPassword;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Foundation\Auth\User as Model;
 use Illuminate\Support\Facades\Hash;
+use App\Notifications\ResetPasswordNotification;
 
-class Usuari extends Model implements Authenticatable
+class Usuari extends Model implements Authenticatable , CanResetPassword
 {
     use HasFactory, Notifiable, HasApiTokens;
 
@@ -79,5 +81,9 @@ class Usuari extends Model implements Authenticatable
     public function getAuthIdentifier()
     {
         return $this->email;
+    }
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 }

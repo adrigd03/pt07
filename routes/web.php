@@ -51,4 +51,10 @@ Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name
 
 Route::get('articles-propis', [ArticleController::class, 'articlesPropis'])->name('articles-propis')->middleware('auth');
 
+Route::post('recuperar', [UsuariController::class, 'recuperar'])->name('recuperar')->middleware('guest');
+
+Route::get('restaurarContrasenya/{token}', [UsuariController::class, 'restaurarForm'])->name('restaurarContrasenya')->middleware('guest');
+
+Route::post('restaurarContrasenya', [UsuariController::class, 'restaurarContrasenya'])->name('restaurarContrasenya.post')->middleware('guest');
+
 

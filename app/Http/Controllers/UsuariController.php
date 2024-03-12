@@ -8,6 +8,9 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use SendsPasswordResetEmails;
+use Illuminate\Support\Facades\Password;
 
 class UsuariController extends Controller
 {
@@ -205,4 +208,123 @@ class UsuariController extends Controller
             return redirect()->back()->withErrors(['error' => 'Error al iniciar sessió'], 'login')->withInput();
         }
     }
+
+    // Funcio per recuperar la contrasenya de l'usuari
+    public function recuperar(Request $request)
+    {
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'email' => 'required|email'
+                ],
+                [
+                    'email.required' => 'El email és obligatori',
+                    'email.email' => 'El email no és vàlid'
+                ]
+            );
+
+            // Comprovar si l'usuari existeix
+            $usuari = Usuari::where('email', $request->email)->first();
+
+            if (!$usuari) {
+                return redirect()->back()->withErrors(['error' => 'Aquest email no està registrat'], 'recuperar')->withInput();
+            }
+
+            // Comprovem que l'usuari no sigui un usuari de Oauth
+            if(!$usuari->password) {
+                return redirect()->back()->withErrors(['error' => "Aquest compte no té disponible l'opció de recuperar contrasenya"], 'recuperar')->withInput();
+            }
+
+            // Generar un token per a la recuperació de la contrasenya, i el guardarem a la taula de password_reset_tokens
+            $token = Password::createToken($usuari);
+
+            $usuari->sendPasswordResetNotification($token);
+
+            // Redirigir l'usuari a la pàgina de login
+            return redirect()->back()->with('success', "S'ha enviat un correu per a recuperar la contrasenya.");
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'recuperar')->withInput();
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->withErrors(['error' => 'Error al recuperar la contrasenya' . ' ' . $e], 'recuperar')->withInput();
+        }
+    }
+
+    // Funcio per restaurar la contrasenya de l'usuari
+    public function restaurarForm(Request $request)
+    {
+        try {
+            
+            return view('restaurar', ['token' => $request->token]);
+
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->withErrors(['error' => 'Error al restaurar la contrasenya'], 'restaurar')->withInput();
+
+        }
+    }
+
+    // Funcio per restaurar la contrasenya de l'usuari
+
+    public function restaurarContrasenya(Request $request){
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'email' => 'required|email',
+                    'password' => 'required|min:6|max:25|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
+                    'token' => 'required'
+                ],
+                [   
+                    'email.required' => 'El email és obligatori',
+                    'email.email' => 'El email no és vàlid',
+                    'password.required' => 'La contrasenya és obligatòria',
+                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters',
+                    'password.max' => 'La contrasenya ha de tenir com a màxim 25 caràcters',
+                    'password.confirmed' => 'Les contrasenyes no coincideixen',
+                    'password.regex' => 'La contrasenya ha de contenir com a mínim una lletra majúscula, una minúscula i un número',
+                    'token.required' => 'El token és obligatori'
+                ]
+            );
+
+            $credentials = $request->only(
+                'email', 'password', 'password_confirmation', 'token'
+            );
+    
+            $status = Password::reset($credentials, function ($user, $password) {
+                $user->password =$password;
+                $user->save();
+            });
+    
+            // Comprovem si s'ha restaurat la contrasenya correctament
+            if ($status == Password::PASSWORD_RESET) {
+                // Si ha anat bé, redirigim l'usuari a la pàgina de login
+                return redirect()->route('login')->with('success', 'Contrasenya restaurada correctament. Inicia sessió per continuar.');
+            } else {
+                
+                // Comprovem si l'error és per un email incorrecte
+                if ($status == Password::INVALID_USER) {
+                    return back()->withInput()->withErrors(['error' => ['Aquest email no és correcte']], 'restaurar');
+                }
+        
+                // Comprovem si l'error és per un token incorrecte
+                if ($status == Password::INVALID_TOKEN) {
+                    return back()->withInput()->withErrors(['error' => ['El token no és vàlid, reinicia el procés de recuperació de contrasenya']], 'restaurar');
+                }
+                // Comprovem si l'error és per un altre motiu
+                return back()->withInput()->withErrors(['error' => ["No s'ha pogut restaurar la contrasenya"], ], 'restaurar');
+            }
+
+
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'restaurar')->withInput();
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->withErrors(['error' => 'Error al restaurar la contrasenya'], 'restaurar')->withInput();
+        }
+    }
+
 }
