@@ -24,8 +24,8 @@ class RedireccionarPaginaInvalida
         $totalArticles = Article::count();
         $totalPages = ceil($totalArticles / $itemsPerPage);
 
-        // Si la pàgina es major que el nombre de pàgines de articles redirigim a la pàgina 1
-        if ($page > $totalPages) {
+         // Si la pàgina es major que el nombre de pàgines de articles redirigim a la pàgina 1
+        if ($page > $totalPages && $totalPages > 0) {
             if($request->is('articles-propis')){
                 return redirect()->route('articles-propis', ['page' => 1]);
             }

@@ -120,6 +120,19 @@ class ArticleController extends Controller
             ->with('success', 'Article eliminat correctament.');
     }
 
+    // Funcio per esborrar tots els articles d'un usuari
+    public static function destroyAll($email)
+    {
+        $articles = Article::where('usuari', $email)->get();
+
+        foreach ($articles as $article) {
+            $article->delete();
+        }
+
+        return redirect()->back()
+            ->with('success', 'Articles eliminats correctament.');
+    }
+
     public function articlesPropis()
     {
         $articles = Article::where('usuari', Auth::user()->email)->latest()->paginate(5);

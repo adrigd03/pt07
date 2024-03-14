@@ -10,7 +10,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use SendsPasswordResetEmails;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
+use App\Http\Controllers\ArticleController;
 
 class UsuariController extends Controller
 {
@@ -65,40 +67,6 @@ class UsuariController extends Controller
         return redirect()->route('home');
     }
 
-
-    // Mostra la pàgina de perfil de l'usuari actual
-    public function perfil()
-    {
-        return view('perfil');
-    }
-
-    // Funcio per actualitzar el perfil de l'usuari actual
-    public function actualitzarProfile(Request $request)
-    {
-        $usuari = Usuari::find(Auth::user()->email);
-
-
-        $usuari->nom = $request->nom;
-        $usuari->cognoms = $request->cognoms;
-        $usuari->username = $request->username;
-
-        $usuari->save();
-
-        return redirect()->route('perfil');
-    }
-
-    // Funcio per actualitzar la contrasenya de l'usuari actual
-    public function actualitzarContrasenya(Request $request)
-    {
-        $usuari = Usuari::find(Auth::user()->email);
-
-
-        $usuari->contrasenya = bcrypt($request->contrasenya);
-
-        $usuari->save();
-
-        return redirect()->route('perfil');
-    }
     // Funcio per esborrar el compte de l'usuari actual
     public function esborrarCompte()
     {
@@ -107,6 +75,14 @@ class UsuariController extends Controller
 
         Auth::logout();
 
+        // Esborrem la imatge de perfil de l'usuari
+        if (Str::contains($usuari->avatar, ['default', 'google']) == false) {
+            $nomImatge = explode('/', $usuari->avatar);
+            unlink(storage_path('app/public/avatars/' . end($nomImatge) ));
+        }
+
+        // Esborrem tots els articles de l'usuari
+        ArticleController::destroyAll($usuari->email);
 
         $usuari->delete();
 
@@ -129,10 +105,10 @@ class UsuariController extends Controller
                     'email.email' => 'El email no és vàlid',
                     'email.unique' => 'Aquest email ja està registrat',
                     'password.required' => 'La contrasenya és obligatòria',
-                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters',
+                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters, un número, una lletra majúscula i una minúscula',
                     'password.max' => 'La contrasenya ha de tenir com a màxim 25 caràcters',
                     'password.confirmed' => 'Les contrasenyes no coincideixen',
-                    'password.regex' => 'La contrasenya ha de contenir com a mínim una lletra majúscula, una minúscula i un número',
+                    'password.regex' => 'La contrasenya ha de tenir com a mínim 6 caràcters, un número, una lletra majúscula i una minúscula',
                     'username.required' => 'El nom de usuari és obligatori',
                     'username.unique' => 'Aquest nom de usuari ja està registrat'
 
@@ -188,7 +164,7 @@ class UsuariController extends Controller
 
             if (Hash::check($request->password, $usuari->password) == false) {
                 // Si la contrasenya esta malament, sumem un intent de login
-                if (!session('loginIntents')) session(['loginIntents' => 1]); 
+                if (!session('loginIntents')) session(['loginIntents' => 1]);
 
                 session(['loginIntents' => session('loginIntents') + 1]);
 
@@ -232,7 +208,7 @@ class UsuariController extends Controller
             }
 
             // Comprovem que l'usuari no sigui un usuari de Oauth
-            if(!$usuari->password) {
+            if (!$usuari->password) {
                 return redirect()->back()->withErrors(['error' => "Aquest compte no té disponible l'opció de recuperar contrasenya"], 'recuperar')->withInput();
             }
 
@@ -256,19 +232,18 @@ class UsuariController extends Controller
     public function restaurarForm(Request $request)
     {
         try {
-            
-            return view('restaurar', ['token' => $request->token]);
 
+            return view('restaurar', ['token' => $request->token]);
         } catch (\Exception $e) {
             //Retornem la resposta error si ha ocorregut algun error
             return redirect()->back()->withErrors(['error' => 'Error al restaurar la contrasenya'], 'restaurar')->withInput();
-
         }
     }
 
     // Funcio per restaurar la contrasenya de l'usuari
 
-    public function restaurarContrasenya(Request $request){
+    public function restaurarContrasenya(Request $request)
+    {
         try {
             // Validar les dades del formulari
             $request->validate(
@@ -277,47 +252,48 @@ class UsuariController extends Controller
                     'password' => 'required|min:6|max:25|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed',
                     'token' => 'required'
                 ],
-                [   
+                [
                     'email.required' => 'El email és obligatori',
                     'email.email' => 'El email no és vàlid',
                     'password.required' => 'La contrasenya és obligatòria',
-                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters',
+                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters, un número, una lletra majúscula i una minúscula',
                     'password.max' => 'La contrasenya ha de tenir com a màxim 25 caràcters',
                     'password.confirmed' => 'Les contrasenyes no coincideixen',
-                    'password.regex' => 'La contrasenya ha de contenir com a mínim una lletra majúscula, una minúscula i un número',
+                    'password.regex' => 'La contrasenya ha de tenir com a mínim 6 caràcters, un número, una lletra majúscula i una minúscula',
                     'token.required' => 'El token és obligatori'
                 ]
             );
 
             $credentials = $request->only(
-                'email', 'password', 'password_confirmation', 'token'
+                'email',
+                'password',
+                'password_confirmation',
+                'token'
             );
-    
+
             $status = Password::reset($credentials, function ($user, $password) {
-                $user->password =$password;
+                $user->password = $password;
                 $user->save();
             });
-    
+
             // Comprovem si s'ha restaurat la contrasenya correctament
             if ($status == Password::PASSWORD_RESET) {
                 // Si ha anat bé, redirigim l'usuari a la pàgina de login
                 return redirect()->route('login')->with('success', 'Contrasenya restaurada correctament. Inicia sessió per continuar.');
             } else {
-                
+
                 // Comprovem si l'error és per un email incorrecte
                 if ($status == Password::INVALID_USER) {
                     return back()->withInput()->withErrors(['error' => ['Aquest email no és correcte']], 'restaurar');
                 }
-        
+
                 // Comprovem si l'error és per un token incorrecte
                 if ($status == Password::INVALID_TOKEN) {
                     return back()->withInput()->withErrors(['error' => ['El token no és vàlid, reinicia el procés de recuperació de contrasenya']], 'restaurar');
                 }
                 // Comprovem si l'error és per un altre motiu
-                return back()->withInput()->withErrors(['error' => ["No s'ha pogut restaurar la contrasenya"], ], 'restaurar');
+                return back()->withInput()->withErrors(['error' => ["No s'ha pogut restaurar la contrasenya"],], 'restaurar');
             }
-
-
         } catch (ValidationException $e) {
             // Retornem la resposta error si hi ha hagut algun error de validació
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'restaurar')->withInput();
@@ -327,4 +303,128 @@ class UsuariController extends Controller
         }
     }
 
+    // Mostra la pàgina de configuracio de l'usuari actual
+    public function configuracio()
+    {
+        return view('configuracio');
+    }
+
+    // Funcio per actualitzar el nom de usuari de l'usuari actual
+    public function updateUsername(Request $request)
+    {
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'username' => 'required|unique:usuaris'
+                ],
+                [
+                    'username.required' => 'El nom de usuari és obligatori',
+                    'username.unique' => 'Aquest nom de usuari ja està registrat'
+                ]
+            );
+
+            // Actualitzar el nom de usuari de l'usuari actual
+            $usuari = Usuari::find(Auth::user()->email);
+            $usuari->username = $request->username;
+            $usuari->save();
+
+            // Redirigir l'usuari a la pàgina de configuracio
+            return redirect()->route('configuracio')->with('success', 'Nom de usuari actualitzat correctament');
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'username')->withInput();
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->with('error', 'Error al actualitzar el nom de usuari')->withInput();
+        }
+    }
+
+    // Funcio per actualitzar la password de l'usuari actual
+    public function updatePassword(Request $request)
+    {
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'password' => 'required|min:6|max:25|regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).+$/|confirmed'
+                ],
+                [
+                    'password.required' => 'La contrasenya és obligatòria',
+                    'password.min' => 'La contrasenya ha de tenir com a mínim 6 caràcters',
+                    'password.max' => 'La contrasenya ha de tenir com a màxim 25 caràcters',
+                    'password.confirmed' => 'Les contrasenyes no coincideixen',
+                    'password.regex' => 'La contrasenya ha de contenir com a mínim una lletra majúscula, una minúscula i un número'
+                ]
+            );
+
+            $usuari = Usuari::find(Auth::user()->email);
+
+            // Comprovar si es un usuari de Oauth
+            if (!$usuari->password) {
+                return redirect()->back()>with('error', 'jkas');;
+            }
+            
+            // Comprovar si la contrasenya antiga és correcta
+            if (!Hash::check($request->old_password, $usuari->password)) {
+                return redirect()->back()->withErrors(['old_password' => 'La contrasenya antiga no és correcta'], 'password');
+            }
+
+            // Actualitzar la contrasenya de l'usuari actual
+            $usuari->password = $request->password;
+            $usuari->save();
+
+            // Redirigir l'usuari a la pàgina de configuracio
+            return redirect()->route('configuracio')->with('success', 'Contrasenya actualitzada correctament');
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'password');
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->with('error', 'Error al actualitzar la contrasenya');
+        }
+    }
+
+    // Funcio per actualitzar la imatge de perfil de l'usuari actual
+    public function updateAvatar(Request $request)
+    {
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'avatar' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048'
+                ],
+                [
+                    'avatar.required' => 'La imatge és obligatòria',
+                    'avatar.image' => 'El fitxer ha de ser una imatge',
+                    'avatar.mimes' => 'El fitxer ha de ser una imatge de tipus jpeg, png, jpg o gif',
+                    'avatar.max' => 'La imatge ha de pesar com a màxim 2MB'
+                ]
+            );
+
+            $usuari = Usuari::find(Auth::user()->email);
+
+            // Si l'usuari ja té una imatge de perfil i no es la default, l'esborrem
+            if (Str::contains($usuari->avatar, ['default', 'google']) == false) {
+                $nomImatge = explode('/', $usuari->avatar);
+                unlink(storage_path('app/public/avatars/' . end($nomImatge) ));
+            }
+
+            // Guardar la imatge de perfil de l'usuari actual a la carpeta publica
+            $usuari->avatar = env('APP_URL') ."/". "storage/" . $request->file('avatar')->store('avatars', 'public');
+            $usuari->save();
+
+
+
+            // Redirigir l'usuari a la pàgina de configuracio
+            return redirect()->route('configuracio')->with('success', 'Imatge de perfil actualitzada correctament');
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'avatar');
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->with('error', 'Error al actualitzar la imatge de perfil' . $e);
+        }
+    }
+    
 }

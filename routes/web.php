@@ -49,7 +49,7 @@ Route::put('articles/{article}', [ArticleController::class, 'editar'])->name('ar
 
 Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name('articles.destroy')->middleware('auth');
 
-Route::get('articles-propis', [ArticleController::class, 'articlesPropis'])->name('articles-propis')->middleware('auth');
+Route::get('articles-propis', [ArticleController::class, 'articlesPropis'])->name('articles-propis')->middleware('auth', 'RedireccionarPaginaInvalida');
 
 Route::post('recuperar', [UsuariController::class, 'recuperar'])->name('recuperar')->middleware('guest');
 
@@ -57,4 +57,12 @@ Route::get('restaurarContrasenya/{token}', [UsuariController::class, 'restaurarF
 
 Route::post('restaurarContrasenya', [UsuariController::class, 'restaurarContrasenya'])->name('restaurarContrasenya.post')->middleware('guest');
 
+Route::get('configuracio', [UsuariController::class, 'configuracio'])->name('configuracio')->middleware('auth');
 
+Route::put('configuracio/username', [UsuariController::class, 'updateUsername'])->name('configuracio.username')->middleware('auth');
+
+Route::put('configuracio/password', [UsuariController::class, 'updatePassword'])->name('configuracio.password')->middleware('auth');
+
+Route::put('configuracio/avatar', [UsuariController::class, 'updateAvatar'])->name('configuracio.avatar')->middleware('auth');
+
+Route::delete('configuracio', [UsuariController::class, 'esborrarCompte'])->name('configuracio.delete')->middleware('auth');

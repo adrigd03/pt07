@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('username')->nullable();
             $table->string('email')->primary();
             $table->string('password')->nullable();
-            $table->string('avatar')->default('default.jpg');
+            $table->string('avatar')->default(env('APP_URL') ."/storage/avatars/default.png");
             $table->boolean('admin')->default(0);
             $table->timestamps();
 

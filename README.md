@@ -1,7 +1,6 @@
 # To-do
-- Arreglar home i mejorar estilo general 
-- configuració de contrasenya / imatge avatar
 - Galeria
+- HybridAuth
 ## Cosas que afegir en el readme final
 
 ## Comentaris
