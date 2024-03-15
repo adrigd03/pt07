@@ -40,7 +40,7 @@
                             <tbody>
                                 @foreach ($articles as $article)
                                 <tr>
-                                    <td><img src="{{ asset('images/' . $article->image) }}" alt="imatge de l'article" width="100" height="100"></td>
+                                    <td><img src="{{ $article->imatge }}" alt="Article sense imatge" width="100" height="100"></td>
                                     <td>{{ $article->titol }}</td>
                                     <td>{{ $article->contingut }}</td>
                                     <td>{{ $article->usuari }}</td>
@@ -95,13 +95,18 @@
                         <div class="alert alert-danger mt-1">{{ $message }}</div>
                         @enderror
                     </div>
-                    <!-- <div class="mb-3">
-                            <label for="image" class="form-label">Imatge</label>
-                            <input type="" class="form-control" id="image" name="image">
-                            @error('image','crearArticle')
-                            <div class="alert alert-danger mt-1">{{ $message }}</div>
-                            @enderror
-                        </div> -->
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge" >
+                            <option value="">Selecciona una imatge</option>
+                            @foreach ($userImatges as $imatge)
+                            <option  value="{{ $imatge->id }}" @selected(old('imatge') == $imatge->id)>{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
+                        @error('imatge','crearArticle')
+                        <div class="alert alert-danger mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
                     <button type="submit" class="btn btn-primary">Crear</button>
                 </form>
             </div>
@@ -147,6 +152,15 @@
                             ">Contingut</label>
                         <textarea class="form-control" id="contingut" name="contingut" rows="3">{{ $article->contingut }}</textarea>
                     </div>
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge">
+                            <option value="">Imatge actual</option> 
+                            @foreach ($userImatges as $imatge)
+                            <option value="{{ $imatge->id }}" >{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                     <button type="submit" class="btn btn-primary">Editar</button>
                 </form>
             </div>
@@ -179,6 +193,18 @@
                         <label for="contingut" class="form-label">Contingut</label>
                         <textarea class="form-control" id="contingut" name="contingut" rows="3">{{ old('contingut') }}</textarea>
                         @error('contingut','editarArticle')
+                        <div class="alert alert-danger mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge">
+                            <option value="">Imatge actual</option> 
+                            @foreach ($userImatges as $imatge)
+                            <option  value="{{ $imatge->id }}" @selected(old('imatge') == $imatge->id)>{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
+                        @error('imatge','editarArticle')
                         <div class="alert alert-danger mt-1">{{ $message }}</div>
                         @enderror
                     </div>

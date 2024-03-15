@@ -15,6 +15,9 @@
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{{route('articles-propis')}}">Articles propis</a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="{{route('galeria')}}">Galeria</a>
+                    </li>
 
                     @endauth
 
@@ -29,7 +32,7 @@
                         <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
                             <span class="d-none d-lg-inline me-2 text-gray-600 small">{{ Auth::user()->username }} </span>
 
-                            <img class="border rounded-circle img-profile" height="40px" width="40px" src="{{ (Auth::user()->avatar)}}" alt="avatar del usuari" />
+                            <img class="border bg-light rounded-circle img-profile" height="40px" width="40px" src="{{ (Auth::user()->avatar)}}" alt="avatar del usuari" />
                         </a>
                         <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
 

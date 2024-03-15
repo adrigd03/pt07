@@ -8,8 +8,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use SendsPasswordResetEmails;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
 use App\Http\Controllers\ArticleController;
@@ -70,23 +68,40 @@ class UsuariController extends Controller
     // Funcio per esborrar el compte de l'usuari actual
     public function esborrarCompte()
     {
-        $usuari = Usuari::find(Auth::user()->email);
+        try {
+            $usuari = Usuari::find(Auth::user()->email);
+
+            if (!$usuari) {
+                return redirect()->back()->with('error', 'No s\'ha trobat l\'usuari');
+            }
+
+            // Esborrem totes les imatges de l'usuari
+            if(GaleriaController::destroyAll($usuari->email) == false){
+                return redirect()->back()->with('error', 'Error al esborrar la galeria');
+            }
+
+            
+            // Esborrem tots els articles de l'usuari
+            if(ArticleController::destroyAll($usuari->email) == false){
+                return redirect()->back()->with('error', 'Error al esborrar els articles');
+            }
+
+            // Esborrem la imatge de perfil de l'usuari
+            if (Str::contains($usuari->avatar, ['default', 'google']) == false) {
+                $nomImatge = explode('/', $usuari->avatar);
+                unlink(storage_path('app/public/avatars/' . end($nomImatge)));
+            }
+
+            
+            Auth::logout();
 
 
-        Auth::logout();
+            $usuari->delete();
 
-        // Esborrem la imatge de perfil de l'usuari
-        if (Str::contains($usuari->avatar, ['default', 'google']) == false) {
-            $nomImatge = explode('/', $usuari->avatar);
-            unlink(storage_path('app/public/avatars/' . end($nomImatge) ));
+            return redirect()->route('home');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al esborrar el compte');
         }
-
-        // Esborrem tots els articles de l'usuari
-        ArticleController::destroyAll($usuari->email);
-
-        $usuari->delete();
-
-        return redirect()->route('home');
     }
 
     // Funcio per registrar un usuari
@@ -362,9 +377,9 @@ class UsuariController extends Controller
 
             // Comprovar si es un usuari de Oauth
             if (!$usuari->password) {
-                return redirect()->back()>with('error', 'jkas');;
+                return redirect()->back() > with('error', 'jkas');;
             }
-            
+
             // Comprovar si la contrasenya antiga és correcta
             if (!Hash::check($request->old_password, $usuari->password)) {
                 return redirect()->back()->withErrors(['old_password' => 'La contrasenya antiga no és correcta'], 'password');
@@ -407,11 +422,11 @@ class UsuariController extends Controller
             // Si l'usuari ja té una imatge de perfil i no es la default, l'esborrem
             if (Str::contains($usuari->avatar, ['default', 'google']) == false) {
                 $nomImatge = explode('/', $usuari->avatar);
-                unlink(storage_path('app/public/avatars/' . end($nomImatge) ));
+                unlink(storage_path('app/public/avatars/' . end($nomImatge)));
             }
 
             // Guardar la imatge de perfil de l'usuari actual a la carpeta publica
-            $usuari->avatar = env('APP_URL') ."/". "storage/" . $request->file('avatar')->store('avatars', 'public');
+            $usuari->avatar = env('APP_URL') . "/" . "storage/" . $request->file('avatar')->store('avatars', 'public');
             $usuari->save();
 
 
@@ -426,5 +441,4 @@ class UsuariController extends Controller
             return redirect()->back()->with('error', 'Error al actualitzar la imatge de perfil' . $e);
         }
     }
-    
 }

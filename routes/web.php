@@ -3,12 +3,9 @@
 use App\Http\Controllers\ArticleController;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Http\Request;
-use App\Models\Usuari;
-use Laravel\Socialite\Facades\Socialite;
-use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\UsuariController;
+use App\Http\Controllers\GaleriaController;
 
-use function PHPSTORM_META\map;
 
 /*
 |--------------------------------------------------------------------------
@@ -66,3 +63,12 @@ Route::put('configuracio/password', [UsuariController::class, 'updatePassword'])
 Route::put('configuracio/avatar', [UsuariController::class, 'updateAvatar'])->name('configuracio.avatar')->middleware('auth');
 
 Route::delete('configuracio', [UsuariController::class, 'esborrarCompte'])->name('configuracio.delete')->middleware('auth');
+
+Route::get('galeria', [GaleriaController::class, 'galeria'])->name('galeria')->middleware('auth');
+
+Route::post('galeria', [GaleriaController::class, 'crear'])->name('galeria.crear')->middleware('auth');
+
+Route::delete('galeria/{imatge}', [GaleriaController::class, 'destroy'])->name('galeria.destroy')->middleware('auth');
+
+Route::put('galeria/{imatge}', [GaleriaController::class, 'editar'])->name('galeria.editar')->middleware('auth');
+

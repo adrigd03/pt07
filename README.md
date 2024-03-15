@@ -1,5 +1,4 @@
 # To-do
-- Galeria
 - HybridAuth
 ## Cosas que afegir en el readme final
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Article;
+use App\Models\Imatge;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,14 @@ class ArticleController extends Controller
     public function home()
     {
         $articles = Article::latest()->paginate(5);
-        return view('home', compact('articles'));
+        // Comrpovem si l'usuari està autenticat
+        if (Auth::check()) {
+            // Agafem totes les imatges de l'usuari llogat
+            $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
+            return view('home', compact('articles', 'userImatges'));
+        } else {
+            return view('home', compact('articles'));
+        }
     }
 
 
@@ -42,11 +50,20 @@ class ArticleController extends Controller
                 ]
             );
 
-
+            
+            
             $article = new Article();
             $article->titol = $request->titol;
             $article->contingut = $request->contingut;
             $article->usuari = $request->user()->email;
+            // Comprovem que la imatge sigui de l'usuari
+            $imatge = Imatge::find($request->imatge);
+            if($imatge){
+                if ($imatge->usuari != Auth::user()->email) {
+                    return redirect()->back()->withErrors(['imatge' => 'La imatge no existeix a a la teva galeria.'], 'crearArticle')->withInput();
+                }
+                $article->imatge = $imatge->url;
+            }
             $article->save();
 
             return redirect()->back()
@@ -60,40 +77,49 @@ class ArticleController extends Controller
     }
 
 
-    
+
 
     public function editar(Request $request, $id)
     {
         try {
-            $request->validate( [
-                'titol' => 'required|string|min:3|max:50',
-                'contingut' => 'required|string|min:10|max:255',
-            ],
-            [
-                'titol.required' => 'El camp titol és obligatori.',
-                'contingut.required' => 'El camp contingut és obligatori.',
+            $request->validate(
+                [
+                    'titol' => 'required|string|min:3|max:50',
+                    'contingut' => 'required|string|min:10|max:255',
+                ],
+                [
+                    'titol.required' => 'El camp titol és obligatori.',
+                    'contingut.required' => 'El camp contingut és obligatori.',
 
-            ]);
+                ]
+            );
 
             $article = Article::find($id);
 
-            if(!$article){
+            if (!$article) {
                 return redirect()->back()
-                ->with('error', 'No s\'ha trobat l\'article.');
+                    ->with('error', 'No s\'ha trobat l\'article.');
             }
 
-            if(Auth::user()->email != $article->usuari ){
+            if (Auth::user()->email != $article->usuari) {
                 return redirect()->back()
-                ->with('error', 'No tens permisos per editar aquest article.');
+                    ->with('error', 'No tens permisos per editar aquest article.');
             }
             $article->titol = $request->titol;
             $article->contingut = $request->contingut;
+            $imatge = Imatge::find($request->imatge);
+            if($imatge){
+                if ($imatge->usuari != Auth::user()->email) {
+                    return redirect()->back()->withErrors(['imatge' => 'La imatge no existeix a a la teva galeria.'], 'editarArticle')->with('idArticle', $id)->withInput();
+                }
+                $article->imatge = $imatge->url;
+            }
             $article->save();
 
             return redirect()->back()->with('success', 'Article actualitzat correctament.');
         } catch (ValidationException $e) {
             return redirect()->back()
-                ->withErrors($e->validator->getMessageBag(), 'editarArticle')->with('idArticle',$id)->withInput();
+                ->withErrors($e->validator->getMessageBag(), 'editarArticle')->with('idArticle', $id)->withInput();
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Error al editar l\'article.');
@@ -104,14 +130,14 @@ class ArticleController extends Controller
     {
         $article = Article::find($id);
 
-        if(!$article){
+        if (!$article) {
             return redirect()->back()
-            ->with('error', 'No s\'ha trobat l\'article.');
+                ->with('error', 'No s\'ha trobat l\'article.');
         }
 
-        if(Auth::user()->email != $article->usuari ){
+        if (Auth::user()->email != $article->usuari) {
             return redirect()->back()
-            ->with('error', 'No tens permisos per esborrar aquest article.');
+                ->with('error', 'No tens permisos per esborrar aquest article.');
         }
 
         $article->delete();
@@ -123,19 +149,25 @@ class ArticleController extends Controller
     // Funcio per esborrar tots els articles d'un usuari
     public static function destroyAll($email)
     {
-        $articles = Article::where('usuari', $email)->get();
+        try {
+            $articles = Article::where('usuari', $email)->get();
 
-        foreach ($articles as $article) {
-            $article->delete();
+            foreach ($articles as $article) {
+                $article->delete();
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            return false;
         }
-
-        return redirect()->back()
-            ->with('success', 'Articles eliminats correctament.');
+       
     }
 
     public function articlesPropis()
     {
         $articles = Article::where('usuari', Auth::user()->email)->latest()->paginate(5);
-        return view('articlesPropis', compact('articles'));
+        $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
+
+        return view('articlesPropis', compact('articles', 'userImatges'));
     }
 }

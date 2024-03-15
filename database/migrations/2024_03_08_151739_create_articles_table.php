@@ -16,7 +16,7 @@ return new class extends Migration
             $table->string('titol');
             $table->text('contingut');
             $table->string('usuari');
-            $table->string('image')->nullable();
+            $table->string('imatge')->nullable();
             $table->boolean('published')->default(false);
             $table->timestamp('published_at')->nullable();
             $table->timestamps();

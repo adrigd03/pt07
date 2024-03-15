@@ -41,7 +41,7 @@
                             <tbody>
                                 @foreach ($articles as $article)
                                 <tr>
-                                    <td><img src="{{ asset('images/' . $article->image) }}" alt="imatge de l'article" width="100" height="100"></td>
+                                    <td><img src="{{$article->imatge }}" alt="Article sense imatge" width="100" height="100"></td>
                                     <td>{{ $article->titol }}</td>
                                     <td>{{ $article->contingut }}</td>
                                     <td>{{ $article->usuari }}</td>
@@ -74,7 +74,7 @@
         </div>
     </div>
 </div>
-
+@auth
 <!-- modal form per crear article-->
 <div class="modal fade " id="modalCreateArticle" tabindex="-1" aria-labelledby="modalCreateArticleLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -100,20 +100,24 @@
                         <div class="alert alert-danger mt-1">{{ $message }}</div>
                         @enderror
                     </div>
-                    <!-- <div class="mb-3">
-                            <label for="image" class="form-label">Imatge</label>
-                            <input type="" class="form-control" id="image" name="image">
-                            @error('image','crearArticle')
-                            <div class="alert alert-danger mt-1">{{ $message }}</div>
-                            @enderror
-                        </div> -->
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge">
+                            <option value="">Selecciona una imatge</option>
+                            @foreach ($userImatges as $imatge)
+                            <option value="{{ $imatge->id }}">{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
+                        @error('imatge','crearArticle')
+                        <div class="alert alert-danger mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
                     <button type="submit" class="btn btn-primary">Crear</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
 <!-- Mostrem el formulari de crear articles automàticament -->
 @if ($errors->crearArticle->any())
 <script>
@@ -131,6 +135,7 @@
 <!-- modal form per editar els articles del usuari -->
 
 @foreach ($articles as $article)
+@if(Auth::user()->email == $article->usuari)
 <div class="modal fade" id="modalEditArticle{{ $article->id }}" tabindex="-1" aria-labelledby="modalEditArticleLabel{{ $article->id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -139,7 +144,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body
-                ">
+            ">
                 <form action="{{ route('articles.editar', $article->id) }}" method="POST">
                     @csrf
                     @method('PUT')
@@ -149,8 +154,17 @@
                     </div>
                     <div class="mb-3">
                         <label for="contingut" class="form-label
-                            ">Contingut</label>
+                    ">Contingut</label>
                         <textarea class="form-control" id="contingut" name="contingut" rows="3">{{ $article->contingut }}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge">
+                            <option value="">Imatge actual</option> 
+                            @foreach ($userImatges as $imatge)
+                            <option value="{{ $imatge->id }}" >{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <button type="submit" class="btn btn-primary">Editar</button>
                 </form>
@@ -158,6 +172,7 @@
         </div>
     </div>
 </div>
+@endif
 @endforeach
 
 <!-- modal form per editar els articles del usuari si ha fet un error -->
@@ -187,6 +202,18 @@
                         <div class="alert alert-danger mt-1">{{ $message }}</div>
                         @enderror
                     </div>
+                    <div class="mb-3">
+                        <label for="imatge" class="form-label">Imatge</label>
+                        <select class="form-select" id="imatge" name="imatge">
+                            <option value="">Selecciona una imatge</option>
+                            @foreach ($userImatges as $imatge)
+                            <option value="{{ $imatge->id }}"  @selected(old('imatge') == $imatge->id)>{{ $imatge->titol }}</option>
+                            @endforeach
+                        </select>
+                        @error('imatge','editarArticle')
+                        <div class="alert alert-danger mt-1">{{ $message }}</div>
+                        @enderror
+                    </div>
                     <button type="submit" class="btn btn-primary">Editar</button>
                 </form>
             </div>
@@ -201,5 +228,6 @@
     myModal.show()
 </script>
 @endif
+@endauth
 
 @endsection
