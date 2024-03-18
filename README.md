@@ -1,5 +1,5 @@
 # To-do
-- HybridAuth
+- Comentar
 ## Cosas que afegir en el readme final
 
 ## Comentaris
@@ -8,7 +8,5 @@
 
 ## Millores
 
-
-### Premium Partners
 
 

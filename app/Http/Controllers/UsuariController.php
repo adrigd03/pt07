@@ -14,63 +14,89 @@ use App\Http\Controllers\ArticleController;
 
 class UsuariController extends Controller
 {
-
-    //  Redirigeix l'usuari a la pàgina de login de Google
+    /**
+     * Redirigir l'usuari a la pàgina de login de Google
+     * @return Socialite
+     */
     public function loginGoogle()
     {
         return Socialite::driver('google')->redirect();
     }
 
-    // Funcio per a la autenticació amb Google i el registre de l'usuari si no existeix
+    /**
+     * Callback de Google per obtenir les dades de l'usuari
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina home si l'usuari s'ha autenticat correctament, altrament redirigir a la pàgina de login
+     * @throws \Exception si no es poden obtenir les dades de l'usuari
+     */
     public function googleCallback(Request $request)
     {
 
         try {
+            // Obtenir les dades de l'usuari
             $user = Socialite::driver('google')->user();
         } catch (\Exception $e) {
             return redirect()->back()->withErrors('Error al obtenir les dades del usuari.');
         }
 
 
-        // //verificar si el usuario existe en la base de datos y si no existe crearlo y loguearlo
+        //verificar si el usuario existe en la base de datos y si no existe crearlo y loguearlo
         $usuari = Usuari::find($user->email);
 
+        // Si l'usuari no existeix, el creem
         if (!$usuari) {
             $usuari = new Usuari();
             $usuari->email = $user->email;
             $usuari->avatar = $user->avatar;
 
+            // Si l'usuari te nickname, el guardem com a username, altrament guardem el primer nom de l'usuari
             if ($user->nickname != null) {
+                // Comprovem si el nickname ja existeix, si existeix afegim un número al final i el guardem
                 $user->username = Usuari::getAvailableNickname($user->nickname);
             } else {
 
+                // Si l'usuari no te nickname, guardem el primer nom de l'usuari com a username
                 $usuari->username = strtolower(explode(' ', $user->name)[0]);
-
                 $usuari->username = Usuari::getAvailableNickname($usuari->username);
             }
 
+            // Guardem el usuari
             $usuari->save();
         }
 
+        // Autenticar l'usuari
         Auth::login($usuari);
 
         return redirect()->route('home');
     }
 
-    // Funcio per tancar la sessió de l'usuari
+    /**
+     * Funció per tancar la sessió de l'usuari
+     * @return redirecció a la pàgina home
+     */
     public function logout()
     {
+        // Tancar la sessió de l'usuari
         Auth::logout();
+
+        // Esborrar totes les dades de la sessió
         session()->flush();
+
         return redirect()->route('home');
     }
 
-    // Funcio per esborrar el compte de l'usuari actual
+    /**
+     * Funció per esborrar el compte de l'usuari
+     * @return redirecció a la pàgina home si l'usuari s'ha esborrat correctament, altrament redirigir a la pàgina de configuració
+     * @throws \Exception si no es pot esborrar l'usuari
+     */
     public function esborrarCompte()
     {
         try {
+            // Obtenir l'usuari
             $usuari = Usuari::find(Auth::user()->email);
 
+            // Comprovar si l'usuari existeix
             if (!$usuari) {
                 return redirect()->back()->with('error', 'No s\'ha trobat l\'usuari');
             }
@@ -92,10 +118,10 @@ class UsuariController extends Controller
                 unlink(storage_path('app/public/avatars/' . end($nomImatge)));
             }
 
-            
+            // Tancar la sessió de l'usuari
             Auth::logout();
 
-
+            // Esborrar l'usuari
             $usuari->delete();
 
             return redirect()->route('home');
@@ -104,7 +130,13 @@ class UsuariController extends Controller
         }
     }
 
-    // Funcio per registrar un usuari
+    /**
+     * Funció per registrar un usuari
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de login si l'usuari s'ha registrat correctament, altrament redirigir a la pàgina de registre
+     * @throws \Exception si no es pot registrar l'usuari
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function registre(Request $request)
     {
         try {
@@ -152,7 +184,13 @@ class UsuariController extends Controller
         }
     }
 
-    // Funcio per autenticar un usuari
+    /**
+     * Funció per iniciar sessió
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina home si l'usuari s'ha autenticat correctament, altrament redirigir a la pàgina de login
+     * @throws \Exception si no es pot iniciar sessió
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function login(Request $request)
     {
         try {
@@ -170,19 +208,22 @@ class UsuariController extends Controller
                 ]
             );
 
-            // Comprovem si la contrasenya és correcta utilitzant el hash check
+            // Agafar l'usuari per email o username
             $usuari = Usuari::where('email', $request->emailUsername)->orWhere('username', $request->emailUsername)->first();
 
+            // Comprovar si l'usuari existeix
             if (!$usuari) {
                 return redirect()->back()->withErrors(['error' => 'El correu o nom de usuari no són correctes'], 'login')->withInput();
             }
 
+            // Comprovem si la contrasenya es correcta
             if (Hash::check($request->password, $usuari->password) == false) {
+
                 // Si la contrasenya esta malament, sumem un intent de login
                 if (!session('loginIntents')) session(['loginIntents' => 1]);
-
                 session(['loginIntents' => session('loginIntents') + 1]);
 
+                
                 return redirect()->back()->withErrors(['error' => 'La contrasenya no és correcta'], 'login')->withInput();
             }
 
@@ -191,16 +232,21 @@ class UsuariController extends Controller
 
             // Redirigir l'usuari a la pàgina home
             return redirect()->route('home');
+
         } catch (ValidationException $e) {
-            // Retornem la resposta error si hi ha hagut algun error de validació. 
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'login')->withInput();
         } catch (\Exception $e) {
-            //Retornem la resposta error si ha ocorregut algun error
             return redirect()->back()->withErrors(['error' => 'Error al iniciar sessió'], 'login')->withInput();
         }
     }
 
-    // Funcio per recuperar la contrasenya de l'usuari
+    /**
+     * Funció per enviar el email de recuperacio de la contrasenya a l'usuari
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de login amb success si a l'usuari se li ha enviat el correu correctament, altrament redirigir a la pàgina de login amb error
+     * @throws \Exception si no es pot enviar el correu de recuperacio de la contrasenya
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function recuperar(Request $request)
     {
         try {
@@ -215,9 +261,10 @@ class UsuariController extends Controller
                 ]
             );
 
-            // Comprovar si l'usuari existeix
+            // Agafar l'usuari per email
             $usuari = Usuari::where('email', $request->email)->first();
 
+            // Comprovar si l'usuari existeix
             if (!$usuari) {
                 return redirect()->back()->withErrors(['error' => 'Aquest email no està registrat'], 'recuperar')->withInput();
             }
@@ -230,24 +277,28 @@ class UsuariController extends Controller
             // Generar un token per a la recuperació de la contrasenya, i el guardarem a la taula de password_reset_tokens
             $token = Password::createToken($usuari);
 
+            // Enviar el correu de recuperacio de la contrasenya a l'usuari
             $usuari->sendPasswordResetNotification($token);
 
-            // Redirigir l'usuari a la pàgina de login
             return redirect()->back()->with('success', "S'ha enviat un correu per a recuperar la contrasenya.");
+
         } catch (ValidationException $e) {
-            // Retornem la resposta error si hi ha hagut algun error de validació
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'recuperar')->withInput();
         } catch (\Exception $e) {
-            //Retornem la resposta error si ha ocorregut algun error
             return redirect()->back()->withErrors(['error' => 'Error al recuperar la contrasenya' . ' ' . $e], 'recuperar')->withInput();
         }
     }
 
-    // Funcio per restaurar la contrasenya de l'usuari
+    /**
+     * Mostra el formulari per restaurar la contrasenya
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de restaurar contrassenya si no hi ha cap error, altrament redirigir a la pàgina de login amb error
+     * @throws \Exception si no es pot mostrar el formulari de restaurar contrasenya
+     */
     public function restaurarForm(Request $request)
     {
         try {
-
+            // Mostrar el formulari per restaurar la contrasenya i passar el token
             return view('restaurar', ['token' => $request->token]);
         } catch (\Exception $e) {
             //Retornem la resposta error si ha ocorregut algun error
@@ -255,8 +306,13 @@ class UsuariController extends Controller
         }
     }
 
-    // Funcio per restaurar la contrasenya de l'usuari
-
+    /**
+     * Funció per restaurar la contrasenya de l'usuari
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de login si s'ha restaurat la contrasenya correctament, altrament redirigir a la pàgina de restaurar contrassenya amb error
+     * @throws \Exception si no es pot restaurar la contrasenya
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function restaurarContrasenya(Request $request)
     {
         try {
@@ -279,6 +335,7 @@ class UsuariController extends Controller
                 ]
             );
 
+            // Crear un array amb les dades del usuari
             $credentials = $request->only(
                 'email',
                 'password',
@@ -286,6 +343,7 @@ class UsuariController extends Controller
                 'token'
             );
 
+            // Restaurar la contrasenya de l'usuari
             $status = Password::reset($credentials, function ($user, $password) {
                 $user->password = $password;
                 $user->save();
@@ -318,13 +376,22 @@ class UsuariController extends Controller
         }
     }
 
-    // Mostra la pàgina de configuracio de l'usuari actual
+    /**
+     * Mostra la pàgina de configuració de l'usuari
+     * @return redirecció a la pàgina de configuració
+     */
     public function configuracio()
     {
         return view('configuracio');
     }
 
-    // Funcio per actualitzar el nom de usuari de l'usuari actual
+    /**
+     * Funció per actualitzar el nom de usuari de l'usuari actual
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de configuració si s'ha actualitzat el nom de usuari correctament, altrament redirigir a la pàgina de configuració amb error
+     * @throws \Exception si no es pot actualitzar el nom de usuari
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function updateUsername(Request $request)
     {
         try {
@@ -339,8 +406,10 @@ class UsuariController extends Controller
                 ]
             );
 
-            // Actualitzar el nom de usuari de l'usuari actual
+            // Agafar l'usuari actual
             $usuari = Usuari::find(Auth::user()->email);
+
+            // Actualitzar el nom de usuari de l'usuari actual
             $usuari->username = $request->username;
             $usuari->save();
 
@@ -355,7 +424,13 @@ class UsuariController extends Controller
         }
     }
 
-    // Funcio per actualitzar la password de l'usuari actual
+    /**
+     * Funció per actualitzar la contrasenya de l'usuari actual
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de configuració si s'ha actualitzat la contrasenya correctament, altrament redirigir a la pàgina de configuració amb error
+     * @throws \Exception si hi ha hagut algun error
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function updatePassword(Request $request)
     {
         try {
@@ -373,6 +448,7 @@ class UsuariController extends Controller
                 ]
             );
 
+            // Agafar l'usuari actual
             $usuari = Usuari::find(Auth::user()->email);
 
             // Comprovar si es un usuari de Oauth
@@ -400,7 +476,13 @@ class UsuariController extends Controller
         }
     }
 
-    // Funcio per actualitzar la imatge de perfil de l'usuari actual
+    /**
+     * Funció per actualitzar la imatge de perfil de l'usuari actual
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de configuració si s'ha actualitzat la imatge de perfil correctament, altrament redirigir a la pàgina de configuració amb error
+     * @throws \Exception si hi ha hagut algun error
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
     public function updateAvatar(Request $request)
     {
         try {
@@ -416,7 +498,7 @@ class UsuariController extends Controller
                     'avatar.max' => 'La imatge ha de pesar com a màxim 2MB'
                 ]
             );
-
+            // Agafar l'usuari actual
             $usuari = Usuari::find(Auth::user()->email);
 
             // Si l'usuari ja té una imatge de perfil i no es la default, l'esborrem

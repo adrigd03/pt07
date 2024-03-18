@@ -8,6 +8,10 @@ use Illuminate\Validation\ValidationException;
 
 class GaleriaController extends Controller
 {
+    /**
+     * Mostra la galeria de l'usuari llogat
+     * @return view galeria
+     */
     public function galeria()
     {
         // Agafem totes les imatges de l'usuari llogat
@@ -16,8 +20,14 @@ class GaleriaController extends Controller
         
     }
 
+    /**
+     * Funció per crear una imatge
+     * @param Request $request dades de la imatge
+     * @return redirecció a la galeria
+     * @throws \Exception si no es pot crear la imatge
+     * @throws ValidationException si hi ha errors en les dades de la imatge
+     */
     public function crear(Request $request){
-
         try{
             $request->validate([
                 'titol' => 'required|string|min:3|max:50',
@@ -37,7 +47,7 @@ class GaleriaController extends Controller
                 'imatge.mimes' => 'El camp imatge ha de ser una imatge de tipus: jpeg, png, jpg, gif, svg.',
                 'imatge.max' => 'El camp imatge ha de ser una imatge de màxim 2MB.',
             ]);
-
+            // Guardem la imatge
             $imatge = new Imatge();
             $imatge->titol = $request->titol;
             $imatge->descripcio = $request->descripcio;
@@ -55,10 +65,17 @@ class GaleriaController extends Controller
 
     }
 
+    /**
+     * Funció per eliminar una imatge
+     * @param $id id de la imatge
+     * @return redirecció a la galeria
+     * @throws \Exception si no es pot eliminar la imatge
+     */
     public function destroy($id){
         try{
             $imatge = Imatge::find($id);
 
+            // Comprovem que la imatge sigui de l'usuari
             if($imatge->usuari != Auth::user()->email){
                 return redirect()->back()->with('error', 'No pots eliminar una imatge que no és teva.');
             }
@@ -66,31 +83,44 @@ class GaleriaController extends Controller
             // Esborrem la imatge 
             $nomImatge = explode('/', $imatge->url);
             unlink(storage_path('app/public/imatges/' . end($nomImatge)));
-
             $imatge->delete();
+
             return redirect()->back()->with('success', 'Imatge eliminada correctament.');
         }catch(\Exception $e){
             return redirect()->back()->with('error', 'Error al eliminar la imatge.');
         }
     }
 
+    /**
+     * Funció per eliminar totes les imatges d'un usuari
+     * @param $email email de l'usuari
+     * @return true|false si s'han eliminat totes les imatges, false si no s'han pogut eliminar
+     * @throws \Exception si no es poden eliminar les imatges
+     */
     public static function destroyAll($email){
         try{
             $imatges = Imatge::where('usuari', $email)->get();
-
+            // Esborrem totes les imatges de l'usuari
             foreach($imatges as $imatge){
-                // Esborrem la imatge 
                 $nomImatge = explode('/', $imatge->url);
                 unlink(storage_path('app/public/imatges/' . end($nomImatge)));
                 $imatge->delete();
             }
-
+            // Retornem true si s'han eliminat totes les imatges
             return true;
         }catch(\Exception $e){
             return false;
         }
     }
 
+    /**
+     * Funció per editar una imatge
+     * @param Request $request dades de la imatge
+     * @param $id id de la imatge
+     * @return redirecció a la galeria
+     * @throws \Exception si no es pot editar la imatge
+     * @throws ValidationException si hi ha errors en les dades de la imatge
+     */
     public  function editar(Request $request, $id){
         try{
             $request->validate([
@@ -108,15 +138,18 @@ class GaleriaController extends Controller
             ]);
 
             $imatge = Imatge::find($id);
-
+            
+            // Comprovem que l'imatge existeixi
             if(!$imatge){
                 return redirect()->back()->with('error', 'No s\'ha trobat la imatge.');
             }
 
+            // Comprovem que la imatge sigui de l'usuari
             if($imatge->usuari != Auth::user()->email){
                 return redirect()->back()->with('error', 'No pots editar una imatge que no és teva.');
             }
 
+            // Editem la imatge
             $imatge->titol = $request->titol;
             $imatge->descripcio = $request->descripcio;
             $imatge->save();
