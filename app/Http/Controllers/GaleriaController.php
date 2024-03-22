@@ -14,9 +14,13 @@ class GaleriaController extends Controller
      */
     public function galeria()
     {
-        // Agafem totes les imatges de l'usuari llogat
-        $imatges = Imatge::where('usuari', Auth::user()->email)->paginate(5);
-        return view('galeria', compact('imatges'));
+        try{
+            // Agafem totes les imatges de l'usuari llogat
+            $imatges = Imatge::where('usuari', Auth::user()->email)->paginate(5);
+            return view('galeria', compact('imatges'));
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', 'Error al carregar la galeria.');
+        }
         
     }
 

@@ -76,13 +76,18 @@ class UsuariController extends Controller
      */
     public function logout()
     {
-        // Tancar la sessió de l'usuari
-        Auth::logout();
+        try{
 
-        // Esborrar totes les dades de la sessió
-        session()->flush();
-
-        return redirect()->route('home');
+            // Tancar la sessió de l'usuari
+            Auth::logout();
+            
+            // Esborrar totes les dades de la sessió
+            session()->flush();
+            
+            return redirect()->route('home');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', 'Error al tancar la sessió');
+        }
     }
 
     /**
@@ -382,7 +387,13 @@ class UsuariController extends Controller
      */
     public function configuracio()
     {
-        return view('configuracio');
+        try {
+            // Mostrar la pàgina de configuració
+            return view('configuracio');
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->with('error', 'Error al mostrar la configuració');
+        }
     }
 
     /**

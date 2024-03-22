@@ -17,16 +17,20 @@ class ArticleController extends Controller
      */
     public function home()
     {
-        // Agafem tots els articles i els paginem 
-        $articles = Article::latest()->paginate(5);
-
-        // Comrpovem si l'usuari està autenticat
-        if (Auth::check()) {
-            // Agafem totes les imatges de l'usuari llogat
-            $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
-            return view('home', compact('articles', 'userImatges'));
-        } else {
-            return view('home', compact('articles'));
+        try{
+            // Agafem tots els articles i els paginem 
+            $articles = Article::latest()->paginate(5);
+            
+            // Comrpovem si l'usuari està autenticat
+            if (Auth::check()) {
+                // Agafem totes les imatges de l'usuari llogat
+                $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
+                return view('home', compact('articles', 'userImatges'));
+            } else {
+                return view('home', compact('articles'));
+            }
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', 'Error al carregar la pàgina principal.');
         }
     }
 
@@ -157,25 +161,29 @@ class ArticleController extends Controller
      */
     public function destroy($id)
     {
-        // Agafem l'article
-        $article = Article::find($id);
-        
-        // Comprovem que l'article existeix
-        if (!$article) {
-            return redirect()->back()
+        try{
+            // Agafem l'article
+            $article = Article::find($id);
+            
+            // Comprovem que l'article existeix
+            if (!$article) {
+                return redirect()->back()
                 ->with('error', 'No s\'ha trobat l\'article.');
-        }
-
-        // Comprovem que l'article sigui de l'usuari
-        if (Auth::user()->email != $article->usuari) {
-            return redirect()->back()
+            }
+            
+            // Comprovem que l'article sigui de l'usuari
+            if (Auth::user()->email != $article->usuari) {
+                return redirect()->back()
                 ->with('error', 'No tens permisos per esborrar aquest article.');
+            }
+            
+            // Esborrem l'article
+            $article->delete();
+            
+            return redirect()->back()->with('success', 'Article eliminat correctament.');
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', 'Error al eliminar l\'article.');
         }
-
-        // Esborrem l'article
-        $article->delete();
-
-        return redirect()->back()->with('success', 'Article eliminat correctament.');
     }
 
     /**
@@ -208,11 +216,17 @@ class ArticleController extends Controller
      */
     public function articlesPropis()
     {
-        // Agafem tots els articles de l'usuari llogat
-        $articles = Article::where('usuari', Auth::user()->email)->latest()->paginate(5);
-        // Agafem totes les imatges de l'usuari llogat
-        $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
+        try{
 
-        return view('articlesPropis', compact('articles', 'userImatges'));
+            // Agafem tots els articles de l'usuari llogat
+            $articles = Article::where('usuari', Auth::user()->email)->latest()->paginate(5);
+            // Agafem totes les imatges de l'usuari llogat
+            $userImatges = Imatge::where('usuari', Auth::user()->email)->get();
+            
+            return view('articlesPropis', compact('articles', 'userImatges'));
+
+        }catch(\Exception $e){
+            return redirect()->back()->with('error', 'Error al mostrar els articles.');
+        }
     }
 }

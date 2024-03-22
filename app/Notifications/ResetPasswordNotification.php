@@ -50,7 +50,7 @@ class ResetPasswordNotification extends Notification
     {
         return (new MailMessage)
             ->subject('Sol·licitud de restabliment de contrasenya') //agregamos el asunto
-            ->greeting('Hola ' . $notifiable->name)// titulo del mensaje
+            ->greeting('Hola ' . $notifiable->username)// titulo del mensaje
             ->line("Reps aquest email perquè s'ha sol·licitat el restabliment de contrasenya per al teu compte")
             // Action : Texto del botón , url(app.url) la tomará desde el .env  , la ruta reset con el token respectivo
             ->action('Canviar contrasenya', url(config('app.url').route('restaurarContrasenya', $this->token, false)))
