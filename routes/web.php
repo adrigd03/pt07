@@ -28,15 +28,15 @@ Route::get('google-callback', [UsuariController::class, 'googleCallback'])->name
 
 Route::get('login', function (Request $request) {
     return view('login');
-})->middleware('guest')->name('login');
+})->name('login');
 
 Route::get('registre', function () {
     return view('registre');
-})->middleware('guest')->name('registre');
+})->name('registre');
 
-Route::post('registre', [UsuariController::class, 'registre'])->name('registre')->middleware('guest');
+Route::post('registre', [UsuariController::class, 'registre'])->name('registre');
 
-Route::post('login', [UsuariController::class, 'login'])->name('login')->middleware('guest');
+Route::post('login', [UsuariController::class, 'login'])->name('login');
 
 Route::post('logout', [UsuariController::class, 'logout'])->name('logout')->middleware('auth');
 
@@ -48,11 +48,11 @@ Route::delete('articles/{article}', [ArticleController::class, 'destroy'])->name
 
 Route::get('articles-propis', [ArticleController::class, 'articlesPropis'])->name('articles-propis')->middleware('auth', 'RedireccionarPaginaInvalida');
 
-Route::post('recuperar', [UsuariController::class, 'recuperar'])->name('recuperar')->middleware('guest');
+Route::post('recuperar', [UsuariController::class, 'recuperar'])->name('recuperar');
 
-Route::get('restaurarContrasenya/{token}', [UsuariController::class, 'restaurarForm'])->name('restaurarContrasenya')->middleware('guest');
+Route::get('restaurarContrasenya/{token}', [UsuariController::class, 'restaurarForm'])->name('restaurarContrasenya');
 
-Route::post('restaurarContrasenya', [UsuariController::class, 'restaurarContrasenya'])->name('restaurarContrasenya.post')->middleware('guest');
+Route::post('restaurarContrasenya', [UsuariController::class, 'restaurarContrasenya'])->name('restaurarContrasenya.post');
 
 Route::get('configuracio', [UsuariController::class, 'configuracio'])->name('configuracio')->middleware('auth');
 
@@ -71,4 +71,6 @@ Route::post('galeria', [GaleriaController::class, 'crear'])->name('galeria.crear
 Route::delete('galeria/{imatge}', [GaleriaController::class, 'destroy'])->name('galeria.destroy')->middleware('auth');
 
 Route::put('galeria/{imatge}', [GaleriaController::class, 'editar'])->name('galeria.editar')->middleware('auth');
+
+Route::post('changeUser', [UsuariController::class, 'changeUser'])->name('changeUser')->middleware('auth');
 

@@ -19,6 +19,12 @@
     </div>
     @endif
 
+    @error('userId', 'changeUser')
+    <div class="alert alert-danger mt-1">
+        {{ $message }}
+    </div>
+    @enderror
+
     <div class="row mt-3">
         <div class="col-md-12">
             <div class="card">

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Password;
 use App\Http\Controllers\ArticleController;
+use Illuminate\Support\Facades\Session;
 
 class UsuariController extends Controller
 {
@@ -64,6 +65,26 @@ class UsuariController extends Controller
             $usuari->save();
         }
 
+        // Comprovar si l'usuari està llogat
+        if (Auth::check()) {
+
+            // Comprovem si està intentant iniciar sessió amb un usuari amb el que ja ha iniciat sessió
+            if (Auth::user()->email == $usuari->email) {
+                return redirect()->route('home')->with('error', 'Ja has iniciat sessió amb aquest usuari');
+            }
+
+            if (Session::has('loggedUsers') && count(Session::get('loggedUsers')) >= 1) {
+
+                // Comprovel si l'usuari ja ha iniciat sessió amb aquest usuari anteriorment
+                if (in_array($usuari, Session::get('loggedUsers'))) {
+                    return redirect()->route('home')->with('error', 'Ja has iniciat sessió amb aquest usuari');
+                }
+            }
+
+            // Guardem l'usuari a la sessió
+            Session::push('loggedUsers', Auth::user());
+        }
+
         // Autenticar l'usuari
         Auth::login($usuari);
 
@@ -76,17 +97,39 @@ class UsuariController extends Controller
      */
     public function logout()
     {
-        try{
+        try {
+
+
+            // Comprovem si ha inciat sessió amb altres usuaris
+            if (Session::has('loggedUsers') && count(Session::get('loggedUsers')) >= 1) {
+
+                // Eliminem l'usuari de la sessió
+                Session::forget('loggedUsers.' . array_search(Auth::user(), Session::get('loggedUsers')));
+
+                // Tancar la sessió de l'usuari
+                Auth::logout();
+
+                $loggedUsers = Session::get('loggedUsers');
+
+                // Agafem l'ultim usuari que ha iniciat sessió
+                $usuari = end($loggedUsers);
+
+                // Autenticar l'usuari
+                Auth::login($usuari);
+
+                Session::forget('loggedUsers.' . array_search($usuari, Session::get('loggedUsers')));
+
+                return redirect()->route('home');
+            }
 
             // Tancar la sessió de l'usuari
             Auth::logout();
-            
             // Esborrar totes les dades de la sessió
             session()->flush();
-            
+
             return redirect()->route('home');
-        }catch(\Exception $e){
-            return redirect()->back()->with('error', 'Error al tancar la sessió');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al tancar la sessió' . $e);
         }
     }
 
@@ -107,13 +150,13 @@ class UsuariController extends Controller
             }
 
             // Esborrem totes les imatges de l'usuari
-            if(GaleriaController::destroyAll($usuari->email) == false){
+            if (GaleriaController::destroyAll($usuari->email) == false) {
                 return redirect()->back()->with('error', 'Error al esborrar la galeria');
             }
 
-            
+
             // Esborrem tots els articles de l'usuari
-            if(ArticleController::destroyAll($usuari->email) == false){
+            if (ArticleController::destroyAll($usuari->email) == false) {
                 return redirect()->back()->with('error', 'Error al esborrar els articles');
             }
 
@@ -123,8 +166,32 @@ class UsuariController extends Controller
                 unlink(storage_path('app/public/avatars/' . end($nomImatge)));
             }
 
+            // Comprovem si ha inciat sessió amb altres usuaris
+            if (Session::has('loggedUsers') && count(Session::get('loggedUsers')) >= 1) {
+
+                // Eliminem l'usuari de la sessió
+                Session::forget('loggedUsers.' . array_search(Auth::user(), Session::get('loggedUsers')));
+
+                // Tancar la sessió de l'usuari
+                Auth::logout();
+
+                $loggedUsers = Session::get('loggedUsers');
+
+                // Agafem l'ultim usuari que ha iniciat sessió
+                $usuari = end($loggedUsers);
+
+                // Autenticar l'usuari
+                Auth::login($usuari);
+
+                Session::forget('loggedUsers.' . array_search($usuari, Session::get('loggedUsers')));
+
+                return redirect()->route('home');
+            }
+
             // Tancar la sessió de l'usuari
             Auth::logout();
+            // Esborrar totes les dades de la sessió
+            session()->flush();
 
             // Esborrar l'usuari
             $usuari->delete();
@@ -228,8 +295,28 @@ class UsuariController extends Controller
                 if (!session('loginIntents')) session(['loginIntents' => 1]);
                 session(['loginIntents' => session('loginIntents') + 1]);
 
-                
+
                 return redirect()->back()->withErrors(['error' => 'La contrasenya no és correcta'], 'login')->withInput();
+            }
+
+            // Comprovem si l'usuari està llogat
+            if (Auth::check()) {
+
+                // Comprovem si està intentant iniciar sessió amb un usuari amb el que ja ha iniciat sessió
+                if (Auth::user()->email == $usuari->email) {
+                    return redirect()->route('home')->with('error', 'Ja has iniciat sessió amb aquest usuari');
+                }
+
+                if (Session::has('loggedUsers') && count(Session::get('loggedUsers')) >= 1) {
+
+                    // Comprovel si l'usuari ja ha iniciat sessió amb aquest usuari anteriorment
+                    if (in_array($usuari, Session::get('loggedUsers'))) {
+                        return redirect()->route('home')->with('error', 'Ja has iniciat sessió amb aquest usuari');
+                    }
+                }
+
+                // Guardem l'usuari a la sessió
+                Session::push('loggedUsers', Auth::user());
             }
 
             // Autenticar l'usuari
@@ -237,7 +324,6 @@ class UsuariController extends Controller
 
             // Redirigir l'usuari a la pàgina home
             return redirect()->route('home');
-
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'login')->withInput();
         } catch (\Exception $e) {
@@ -286,7 +372,6 @@ class UsuariController extends Controller
             $usuari->sendPasswordResetNotification($token);
 
             return redirect()->back()->with('success', "S'ha enviat un correu per a recuperar la contrasenya.");
-
         } catch (ValidationException $e) {
             return redirect()->back()->withErrors($e->validator->getMessageBag(), 'recuperar')->withInput();
         } catch (\Exception $e) {
@@ -532,6 +617,80 @@ class UsuariController extends Controller
         } catch (\Exception $e) {
             //Retornem la resposta error si ha ocorregut algun error
             return redirect()->back()->with('error', 'Error al actualitzar la imatge de perfil' . $e);
+        }
+    }
+
+    /**
+     * Funció per canviar entre els usuaris de la sessió
+     * @param Request $request dades de l'usuari
+     * @return redirecció a la pàgina de configuració si s'ha canviat d'usuari correctament, altrament redirigir a la pàgina de configuració amb error
+     * @throws \Exception si hi ha hagut algun error
+     * @throws ValidationException si hi ha errors en les dades de l'usuari
+     */
+    public function changeUser(Request $request)
+    {
+        try {
+            // Validar les dades del formulari
+            $request->validate(
+                [
+                    'email' => 'required|exists:usuaris,email'
+                ],
+                [
+                    'email.required' => 'L\'usuari és obligatori',
+                    'email.exists' => 'L\'usuari no existeix'
+                ]
+            );
+
+            // Comparar si l'usuari que es vol canviar es l'usuari actual
+            if ($request->email == Auth::user()->email) {
+                return redirect()->back()->with('error', 'No pots canviar a l\'usuari actual');
+            }
+
+            // Comprovem si hi ha usuaris als quals canviar
+            if (!Session::has('loggedUsers')) {
+                return redirect()->back()->with('error', 'No hi ha cap usuari per canviar');
+            }
+
+            // Comprovem si l'usuari està a la sessió
+            $usuari = Usuari::find($request->email);
+
+            $isCurrent = false;
+            $canChange = false;
+
+            foreach (Session::get('loggedUsers') as $user) {
+                // Comprovem si l'usuari pot canviar
+                if ($user->email == $usuari->email) {
+                    $canChange = true;
+                }
+                // Comprovem si l'usuari llogat ja està a la sessió
+                if ($user->email == Auth::user()->email) {
+                    $isCurrent = true;
+                }
+            }
+
+            if (!$isCurrent) {
+                Session::push('loggedUsers', Auth::user());
+            }
+
+            // Comprovem si l'usuari pot canviar
+            if (!$canChange) {
+                return redirect()->back()->with('error', 'No pots canviar a aquest usuari');
+            }
+
+            // Autenticar l'usuari
+            Auth::login($usuari);
+
+            // Esborrar l'usuari de la sessió
+            Session::forget('loggedUsers.' . array_search($usuari, Session::get('loggedUsers')));
+
+            // Redirigir l'usuari de volta a la pàgina a la que estava
+            return redirect()->back()->with('success', 'Usuari canviat correctament');
+        } catch (ValidationException $e) {
+            // Retornem la resposta error si hi ha hagut algun error de validació
+            return redirect()->back()->withErrors($e->validator->getMessageBag(), 'changeUser');
+        } catch (\Exception $e) {
+            //Retornem la resposta error si ha ocorregut algun error
+            return redirect()->back()->with('error', 'Error al canviar d\'usuari' . $e);
         }
     }
 }

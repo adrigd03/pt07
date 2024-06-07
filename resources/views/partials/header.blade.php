@@ -31,18 +31,37 @@
                     <div class="nav-item dropdown no-arrow">
                         <a class="dropdown-toggle nav-link" aria-expanded="false" data-bs-toggle="dropdown" href="#">
                             <span class="d-none d-lg-inline me-2 text-gray-600 small">{{ Auth::user()->username }} </span>
-
+                            
                             <img class="border bg-light rounded-circle img-profile" height="40px" width="40px" src="{{ (Auth::user()->avatar)}}" alt="avatar del usuari" />
                         </a>
                         <div class="dropdown-menu shadow dropdown-menu-end animated--grow-in">
+                            @if (Session::has('loggedUsers') && count(Session::get('loggedUsers')) >= 1)
 
+
+
+                            @foreach (Session::get('loggedUsers') as $user)
+                            <form method="POST" action="{{ route('changeUser') }}">
+                            @csrf
+                            <input type="hidden" name="email" value="{{$user->email}}">
+                            <button class="btn me-2 text-gray-400" type="submit" class="dropdown-item">
+                                <img class="border bg-light rounded-circle img-profile" height="40px" width="40px" src="{{ $user->avatar }}" alt="avatar del usuari" />
+                                Login com a {{$user->username}}
+                            </button>
+                            </form>
+                            @endforeach
+                            <hr class="dropdown-divider">
+                            @endif
+
+                            <a class="dropdown-item" href="{{route('login')}}">
+                                Inicia sessió amb un altre compte
+                            </a>
                             <a class="dropdown-item" href="{{route('configuracio')}}">
-                                <i class="fas fa-user fa-sm fa-fw me-2 text-gray-400"></i>&nbsp;Perfil
+                                Perfil
                             </a>
                             <a class="dropdown-item" href="#">
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
-                                    <button class="btn me-2 text-gray-400" type="submit">Logout</button>
+                                    <button class="btn me-2 text-gray-400 ps-0" type="submit">Logout</button>
                                 </form>
                             </a>
                         </div>
@@ -63,5 +82,7 @@
             @endguest
         </div>
 
-    </nav>
-</header>
+        
+        
+        </nav>
+        </header>
